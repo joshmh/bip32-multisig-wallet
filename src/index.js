@@ -2,32 +2,31 @@ var assert = require('assert')
 
 var bitcoin = require('bitcoinjs-lib')
 var bip32utils = require('bip32-utils')
-var networks = bitcoin.networks
 var typeForce = require('typeforce')
 var selectInputs = require('./selection')
 
-function Wallet(external, internal) {
-  this.account = new bip32utils.Account(external, internal)
-  this.external = external
-  this.internal = internal
+/*
+
+TODO: Need to revamp this:
+  - Move signing to MultisigAccount
+  - Move JSON dump/load to MultisigAccount
+
+*/
+
+function Wallet (account) {
+  this.account = account
   this.unspents = []
 }
 
 Wallet.fromJSON = function(json) {
-  var external = bitcoin.HDNode.fromBase58(json.external.node)
-  var internal = bitcoin.HDNode.fromBase58(json.internal.node)
-  var wallet = new Wallet(external, internal)
-  wallet.account.external.addresses = json.external.addresses
-  wallet.account.internal.addresses = json.internal.addresses
-  wallet.account.external.map = json.external.map
-  wallet.account.internal.map = json.internal.map
-  wallet.account.external.k = json.external.k
-  wallet.account.internal.k = json.internal.k
+  var wallet = new Wallet(bip32utils.MultisigAccount.fromJSON(json.account))
   wallet.unspents = json.unspents
 
   return wallet
 }
 
+/*
+// TODO: Needs to be modified to take array of seeds
 Wallet.fromSeedBuffer = function(seed, network) {
   network = network || networks.bitcoin
 
@@ -40,10 +39,9 @@ Wallet.fromSeedBuffer = function(seed, network) {
 
   return new Wallet(external, internal)
 }
+*/
 
-Wallet.prototype.createTransaction = function(outputs, external, internal) {
-  external = external || this.external
-  internal = internal || this.internal
+Wallet.prototype.createTransaction = function(outputs) {
   var network = this.getNetwork()
 
   // filter un-confirmed
@@ -83,27 +81,21 @@ Wallet.prototype.createTransaction = function(outputs, external, internal) {
 
     change = selection.change
     fee = selection.fee
-
   } else {
     change = 0
     fee = selection.change + selection.fee
-
   }
-
-  // sign and return
-  var addresses = inputs.map(function(input) { return input.address })
-  var transaction = this.signWith(txb, addresses, external, internal).build()
 
   return {
     fee: fee,
     change: change,
-    transaction: transaction
+    transaction: txb
   }
 }
 
 Wallet.prototype.containsAddress = function(address) { return this.account.containsAddress(address) }
 Wallet.prototype.discover = function(gapLimit, queryCallback, done) {
-  function discoverChain(iterator, callback) {
+  function discoverChain (iterator, callback) {
     bip32utils.discovery(iterator, gapLimit, queryCallback, function(err, used, checked) {
       if (err) return callback(err)
 
@@ -134,7 +126,6 @@ Wallet.prototype.getChangeAddress = function() { return this.account.getInternal
 Wallet.prototype.getConfirmedBalance = function() {
   return this.unspents.filter(function(unspent) {
     return unspent.confirmations > 0
-
   }).reduce(function(accum, unspent) {
     return accum + unspent.value
   }, 0)
@@ -153,11 +144,11 @@ Wallet.prototype.setUnspentOutputs = function(unspents) {
     var txId = unspent.txId
 
     typeForce({
-      txId: "String",
-      confirmations: "Number",
-      address: "String",
-      value: "Number",
-      vout: "Number"
+      txId: 'String',
+      confirmations: 'Number',
+      address: 'String',
+      value: 'Number',
+      vout: 'Number'
     }, unspent)
 
     assert.equal(txId.length, 64, 'Expected valid txId, got ' + txId)
@@ -176,33 +167,13 @@ Wallet.prototype.setUnspentOutputs = function(unspents) {
   this.unspents = unspents
 }
 
-Wallet.prototype.signWith = function(tx, addresses, external, internal) {
-  external = external || this.external
-  internal = internal || this.internal
-
-  var nodes = this.account.getNodes(addresses, external, internal)
-
-  nodes.forEach(function(node, i) {
-    tx.sign(i, node.privKey)
-  })
-
-  return tx
+Wallet.prototype.sign = function(tx, addresses, external, internal) {
+  return this.account.sign(tx, addresses, external, internal)
 }
 
 Wallet.prototype.toJSON = function() {
   return {
-    external: {
-      addresses: this.account.external.addresses,
-      map: this.account.external.map,
-      k: this.account.external.k,
-      node: this.external.toBase58()
-    },
-    internal: {
-      addresses: this.account.internal.addresses,
-      map: this.account.internal.map,
-      k: this.account.internal.k,
-      node: this.internal.toBase58()
-    },
+    account: this.account.toJSON(),
     unspents: this.unspents
   }
 }
