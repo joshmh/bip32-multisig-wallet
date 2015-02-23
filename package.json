@@ -1,7 +1,7 @@
 {
-  "name": "bip32-wallet",
-  "version": "0.2.2",
-  "description": "A BIP32 Wallet backed by bitcoinjs-lib, lite on features but heavily tested.",
+  "name": "bip32-multisig-wallet",
+  "version": "1.0.0",
+  "description": "A BIP32 multisig Wallet backed by bitcoinjs-lib, lite on features but heavily tested.",
   "main": "./src/index.js",
   "scripts": {
     "coverage": "istanbul cover _mocha -- test/*.js",
@@ -10,14 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dcousens/bip32-wallet.git"
+    "url": "https://github.com/joshmh/bip32-multisig-wallet.git"
   },
   "author": "Daniel Cousens",
+  "contributors": ["Josh Harvey"],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dcousens/bip32-wallet/issues"
+    "url": "https://github.com/joshmh/bip32-multisig-wallet/issues"
   },
-  "homepage": "https://github.com/dcousens/bip32-wallet",
+  "homepage": "https://github.com/joshmh/bip32-multisig-wallet",
   "devDependencies": {
     "coveralls": "^2.11.2",
     "istanbul": "^0.3.5",

@@ -13,21 +13,21 @@ TODO: Need to revamp this:
 
 */
 
-function Wallet (account) {
+function MultisigWallet (account) {
   this.account = account
   this.unspents = []
 }
 
-Wallet.fromJSON = function(json) {
-  var wallet = new Wallet(bip32utils.MultisigAccount.fromJSON(json.account))
-  wallet.unspents = json.unspents
+MultisigWallet.fromJSON = function(json) {
+  var MultisigWallet = new MultisigWallet(bip32utils.MultisigAccount.fromJSON(json.account))
+  MultisigWallet.unspents = json.unspents
 
-  return wallet
+  return MultisigWallet
 }
 
 /*
 // TODO: Needs to be modified to take array of seeds
-Wallet.fromSeedBuffer = function(seed, network) {
+MultisigWallet.fromSeedBuffer = function(seed, network) {
   network = network || networks.bitcoin
 
   // HD first-level child derivation method should be hardened
@@ -37,11 +37,11 @@ Wallet.fromSeedBuffer = function(seed, network) {
   var external = i.derive(0)
   var internal = i.derive(1)
 
-  return new Wallet(external, internal)
+  return new MultisigWallet(external, internal)
 }
 */
 
-Wallet.prototype.createTransaction = function(outputs) {
+MultisigWallet.prototype.createTransaction = function(outputs) {
   var network = this.getNetwork()
 
   // filter un-confirmed
@@ -93,8 +93,8 @@ Wallet.prototype.createTransaction = function(outputs) {
   }
 }
 
-Wallet.prototype.containsAddress = function(address) { return this.account.containsAddress(address) }
-Wallet.prototype.discover = function(gapLimit, queryCallback, done) {
+MultisigWallet.prototype.containsAddress = function(address) { return this.account.containsAddress(address) }
+MultisigWallet.prototype.discover = function(gapLimit, queryCallback, done) {
   function discoverChain (iterator, callback) {
     bip32utils.discovery(iterator, gapLimit, queryCallback, function(err, used, checked) {
       if (err) return callback(err)
@@ -116,28 +116,28 @@ Wallet.prototype.discover = function(gapLimit, queryCallback, done) {
     discoverChain(internal, done)
   })
 }
-Wallet.prototype.getAllAddresses = function() { return this.account.getAllAddresses() }
-Wallet.prototype.getBalance = function() {
+MultisigWallet.prototype.getAllAddresses = function() { return this.account.getAllAddresses() }
+MultisigWallet.prototype.getBalance = function() {
   return this.unspents.reduce(function(accum, unspent) {
     return accum + unspent.value
   }, 0)
 }
-Wallet.prototype.getChangeAddress = function() { return this.account.getInternalAddress() }
-Wallet.prototype.getConfirmedBalance = function() {
+MultisigWallet.prototype.getChangeAddress = function() { return this.account.getInternalAddress() }
+MultisigWallet.prototype.getConfirmedBalance = function() {
   return this.unspents.filter(function(unspent) {
     return unspent.confirmations > 0
   }).reduce(function(accum, unspent) {
     return accum + unspent.value
   }, 0)
 }
-Wallet.prototype.getNetwork = function() { return this.account.getNetwork() }
-Wallet.prototype.getReceiveAddress = function() { return this.account.getExternalAddress() }
-Wallet.prototype.isChangeAddress = function(address) { return this.account.isInternalAddress(address) }
-Wallet.prototype.isReceiveAddress = function(address) { return this.account.isExternalAddress(address) }
-Wallet.prototype.nextChangeAddress = function() { return this.account.nextInternalAddress() }
-Wallet.prototype.nextReceiveAddress = function() { return this.account.nextExternalAddress() }
+MultisigWallet.prototype.getNetwork = function() { return this.account.getNetwork() }
+MultisigWallet.prototype.getReceiveAddress = function() { return this.account.getExternalAddress() }
+MultisigWallet.prototype.isChangeAddress = function(address) { return this.account.isInternalAddress(address) }
+MultisigWallet.prototype.isReceiveAddress = function(address) { return this.account.isExternalAddress(address) }
+MultisigWallet.prototype.nextChangeAddress = function() { return this.account.nextInternalAddress() }
+MultisigWallet.prototype.nextReceiveAddress = function() { return this.account.nextExternalAddress() }
 
-Wallet.prototype.setUnspentOutputs = function(unspents) {
+MultisigWallet.prototype.setUnspentOutputs = function(unspents) {
   var seen = {}
 
   unspents.forEach(function(unspent) {
@@ -167,15 +167,15 @@ Wallet.prototype.setUnspentOutputs = function(unspents) {
   this.unspents = unspents
 }
 
-Wallet.prototype.sign = function(tx, addresses, external, internal) {
+MultisigWallet.prototype.sign = function(tx, addresses, external, internal) {
   return this.account.sign(tx, addresses, external, internal)
 }
 
-Wallet.prototype.toJSON = function() {
+MultisigWallet.prototype.toJSON = function() {
   return {
     account: this.account.toJSON(),
     unspents: this.unspents
   }
 }
 
-module.exports = Wallet
+module.exports = MultisigWallet
